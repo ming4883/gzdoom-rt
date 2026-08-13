@@ -57,7 +57,7 @@ else()
 	set(CMAKE_CXX_STANDARD 17)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF) 
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 list( APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake )
@@ -312,7 +312,7 @@ if( MSVC )
 else()
 	set( REL_LINKER_FLAGS "" )
 	set( ALL_C_FLAGS "-ffp-contract=off" )
-	
+
 	if ( HAVE_RT )
 		set( ALL_C_FLAGS "${ALL_C_FLAGS} -DHAVE_RT=1" )
 	else()
@@ -443,6 +443,8 @@ install(DIRECTORY docs/
 		COMPONENT "Documentation")
 
 option( DYN_OPENAL "Dynamically load OpenAL" ON )
+
+set(ENV{RTGL1_SDK_PATH} "${PROJECT_SOURCE_DIR}/libraries/RTGL")
 
 add_subdirectory( libraries/lzma )
 add_subdirectory( libraries/miniz )

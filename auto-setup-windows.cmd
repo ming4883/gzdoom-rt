@@ -58,25 +58,9 @@ pushd "%~dp0\build"
 if exist vcpkg if exist vcpkg\* git -C ./vcpkg pull
 if not exist vcpkg git clone https://github.com/microsoft/vcpkg
 
-if exist zmusic if exist vcpkg\* git -C ./zmusic pull
-if not exist zmusic git clone https://github.com/zdoom/zmusic
-
-mkdir "%~dp0\build\zmusic\build"
 mkdir "%~dp0\build\vcpkg_installed"
-
-cmake -A x64 -S ./zmusic -B ./zmusic/build ^
-	-DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake ^
-	-DVCPKG_LIBSNDFILE=1 ^
-	-DVCPKG_INSTALLLED_DIR=../vcpkg_installed/
-cmake --build ./zmusic/build --config Release -- -maxcpucount -verbosity:minimal
 
 cmake -A x64 -S .. -B . ^
 	-DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake ^
-	-DZMUSIC_INCLUDE_DIR=./zmusic/include ^
-	-DZMUSIC_LIBRARIES=./zmusic/build/source/Release/zmusic.lib ^
 	-DVCPKG_INSTALLLED_DIR=./vcpkg_installed/
-cmake --build . --config RelWithDebInfo -- -maxcpucount -verbosity:minimal
-
-rem -- If successful, show the build
-if exist RelWithDebInfo\gzdoom.exe explorer.exe RelWithDebInfo
 
