@@ -172,7 +172,7 @@ namespace cvar
     RT_CVAR( rt_emis_additive_dflt,     0.5f,   "emission value for objects with additive blending" )
     RT_CVAR( rt_smoothtextures,         false,  "enable linear texture filtering" )
 
-    RT_CVAR( rt_tnmp_ev100_min,         2.f,    "min brightness for auto-exposure" )
+    RT_CVAR( rt_tnmp_ev100_min,         1.f,    "min brightness for auto-exposure" )
     RT_CVAR( rt_tnmp_ev100_max,         7.7f,   "max brightness for auto-exposure" )
     RT_CVAR( rt_tnmp_saturation_r,      0.f,    "-1 desaturate, +1 over saturate" )
     RT_CVAR( rt_tnmp_saturation_g,      0.f,    "-1 desaturate, +1 over saturate" )
@@ -180,7 +180,7 @@ namespace cvar
     RT_CVAR( rt_tnmp_crosstalk_r,       1.0f,   "how much to shift Red, when Green or Blue are intense; set one channel to 1.0, others to <= 1.0" )
     RT_CVAR( rt_tnmp_crosstalk_g,       0.7f,   "how much to shift Green, when Red or Blue are intense; set one channel to 1.0, others to <= 1.0" )
     RT_CVAR( rt_tnmp_crosstalk_b,       0.8f,   "how much to shift Blue, when Red or Green are intense; set one channel to 1.0, others to <= 1.0" )
-    RT_CVAR( rt_tnmp_contrast,          0.1f,   "(only if rt_hdr is OFF) LDR contrast" )
+    RT_CVAR( rt_tnmp_contrast,          0.03125f,   "(only if rt_hdr is OFF) LDR contrast" )
     RT_CVAR( rt_hdr_contrast,           0.15f,  "(only if rt_hdr is ON) HDR contrast" )
     RT_CVAR( rt_hdr_saturation,         0.15f,  "(only if rt_hdr is ON) HDR saturation: -1 desaturate, +1 over saturate" )
     RT_CVAR( rt_hdr_brightness,         1.0f,   "(only if rt_hdr is ON) HDR brightess multiplier" )
