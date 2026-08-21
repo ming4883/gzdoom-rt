@@ -869,7 +869,28 @@ namespace firststart
                 {
                     case ITEM_MODE: {
                         cvar::rt_framegen = false;
-                        if( cvar::rt_available_dlss2 && cvar::rt_available_fsr2 )
+                        if( cvar::rt_available_dlss2 && cvar::rt_available_fsr2 && cvar::rt_available_xess )
+                        {
+                            if( cvar::rt_upscale_dlss > 0 )
+                            {
+                                const int preset      = *cvar::rt_upscale_dlss;
+                                cvar::rt_upscale_dlss = 0;
+                                cvar::rt_upscale_fsr2 = preset;
+                            }
+                            else if( cvar::rt_upscale_fsr2 > 0 )
+                            {
+                                const int preset      = *cvar::rt_upscale_fsr2;
+                                cvar::rt_upscale_fsr2 = 0;
+                                cvar::rt_upscale_xess = preset;
+                            }
+                            else if( cvar::rt_upscale_xess > 0 )
+                            {
+                                const int preset      = *cvar::rt_upscale_xess;
+                                cvar::rt_upscale_xess = 0;
+                                cvar::rt_upscale_dlss = preset;
+                            }
+                        }
+                        else if( cvar::rt_available_dlss2 && cvar::rt_available_fsr2 )
                         {
                             if( cvar::rt_upscale_dlss > 0 )
                             {
@@ -884,10 +905,41 @@ namespace firststart
                                 cvar::rt_upscale_fsr2 = 0;
                             }
                         }
-                        else if( !cvar::rt_available_dlss2 && !cvar::rt_available_fsr2 )
+                        else if( cvar::rt_available_dlss2 && cvar::rt_available_xess )
+                        {
+                            if( cvar::rt_upscale_dlss > 0 )
+                            {
+                                const int preset      = *cvar::rt_upscale_dlss;
+                                cvar::rt_upscale_dlss = 0;
+                                cvar::rt_upscale_xess = preset;
+                            }
+                            else if( cvar::rt_upscale_xess > 0 )
+                            {
+                                const int preset      = *cvar::rt_upscale_xess;
+                                cvar::rt_upscale_xess = 0;
+                                cvar::rt_upscale_dlss = preset;
+                            }
+                        }
+                        else if( cvar::rt_available_fsr2 && cvar::rt_available_xess )
+                        {
+                            if( cvar::rt_upscale_fsr2 > 0 )
+                            {
+                                const int preset      = *cvar::rt_upscale_fsr2;
+                                cvar::rt_upscale_fsr2 = 0;
+                                cvar::rt_upscale_xess = preset;
+                            }
+                            else if( cvar::rt_upscale_xess > 0 )
+                            {
+                                const int preset      = *cvar::rt_upscale_xess;
+                                cvar::rt_upscale_xess = 0;
+                                cvar::rt_upscale_fsr2 = preset;
+                            }
+                        }
+                        else if( !cvar::rt_available_dlss2 && !cvar::rt_available_fsr2 && !cvar::rt_available_xess )
                         {
                             cvar::rt_upscale_dlss = 0;
                             cvar::rt_upscale_fsr2 = 0;
+                            cvar::rt_upscale_xess = 0;
                         }
                         return true;
                     }
@@ -906,7 +958,7 @@ namespace firststart
                                 default: cvar::rt_upscale_dlss = 2; break;
                             }
                         }
-                        if( cvar::rt_available_fsr2 )
+                        else if( cvar::rt_available_fsr2 )
                         {
                             switch( *cvar::rt_upscale_fsr2 )
                             {
@@ -917,6 +969,19 @@ namespace firststart
                                 case 1: cvar::rt_upscale_fsr2 = left ? 2 : 6; break;
                                 case 6: cvar::rt_upscale_fsr2 = left ? 1 : 6; break;
                                 default: cvar::rt_upscale_fsr2 = 2; break;
+                            }
+                        }
+                        else if( cvar::rt_available_xess )
+                        {
+                            switch( *cvar::rt_upscale_xess )
+                            {
+                                case 0: break;
+                                case 4: cvar::rt_upscale_xess = left ? 4 : 3; break;
+                                case 3: cvar::rt_upscale_xess = left ? 4 : 2; break;
+                                case 2: cvar::rt_upscale_xess = left ? 3 : 1; break;
+                                case 1: cvar::rt_upscale_xess = left ? 2 : 6; break;
+                                case 6: cvar::rt_upscale_xess = left ? 1 : 6; break;
+                                default: cvar::rt_upscale_xess = 2; break;
                             }
                         }
                         return true;
@@ -1319,6 +1384,10 @@ namespace firststart
                 return cvar::rt_framegen && cvar::rt_available_fsr3fg //
                            ? "FSR 3"
                            : "FSR 2";
+            }
+            if( cvar::rt_upscale_xess > 0 && cvar::rt_available_xess )
+            {
+                return "XeSS";
             }
             return "Custom";
         };

@@ -151,6 +151,8 @@ namespace cvar
                                                 "This controls the DLSS upscaling (Super Resolution) but not the Frame Generation" )
     RT_CVAR( rt_upscale_fsr2,           0,      "0 - off, 1 - quality, 2 - balanced, 3 - perf, 4 - ultra perf, 5 - FSR2 with rt_renderscale, 6 - native. "
                                                 "This controls the FSR3 / FSR2 upscaling (Super Resolution), but not the Frame Generation.")
+    RT_CVAR( rt_upscale_xess,           0,      "0 - off, 1 - quality, 2 - balanced, 3 - perf, 4 - ultra perf, 5 - XeSS with rt_renderscale, 6 - native. "
+                                                "This controls the Intel XeSS upscaling (Super Resolution).")
     RT_CVAR( rt_sharpen,                0,      "image sharpening; 0 - auto, 1 - naive, 2 - AMD CAS, 3 - force disable" )
 
     RT_CVAR( rt_remix_rayreconstr,      false,  "[only for RTX Remix] DLSS Ray Reconstruction - denoise path tracing with AI" )
@@ -271,12 +273,16 @@ namespace cvar
     bool rt_available_dlss3fg = false;
     bool rt_available_fsr2    = false;
     bool rt_available_fsr3fg  = false;
+    bool rt_available_xess    = false;
+
     bool rt_available_dxgi    = false;
 
     const char* rt_failreason_dlss2   = nullptr;
     const char* rt_failreason_dlss3fg = nullptr;
     const char* rt_failreason_fsr2    = nullptr;
     const char* rt_failreason_fsr3fg  = nullptr;
+    const char* rt_failreason_xess    = nullptr;
+
     const char* rt_failreason_dxgi    = nullptr;
 
     bool rt_hdr_available = false;
@@ -2416,6 +2422,7 @@ Win32RTVideo::Win32RTVideo()
             RT_FEATURE_FSR3_FG  = 2,
             RT_FEATURE_DLSS2    = 4,
             RT_FEATURE_DLSS3_FG = 8,
+            RT_FEATURE_XESS     = 16,
         };
 
         const std::pair< std::filesystem::path, int > dlls[] = {
@@ -2464,6 +2471,7 @@ Win32RTVideo::Win32RTVideo()
                 if( failedFeatures & RT_FEATURE_DLSS2   ) msg += "NVIDIA DLSS2 (AI Upscaling)\n";
                 if( failedFeatures & RT_FEATURE_FSR3_FG ) msg += "AMD FSR 3 (Frame Generation)\n";
                 if( failedFeatures & RT_FEATURE_FSR2    ) msg += "AMD FSR 2 (Upscaling)\n";
+                if( failedFeatures & RT_FEATURE_XESS    ) msg += "Intel XeSS (Upscaling)\n";
                 // clang-format on
                 msg += "                                   will NOT be available!\n";
             }
@@ -2743,6 +2751,15 @@ void RT_UpscaleCvarsToRtgl( RgStartFrameRenderResolutionParams* pDst )
                      ? int( cvar::rt_upscale_fsr2 )
                      : 0;
 
+    cvar::rt_available_xess =
+        rt.rgUtilIsUpscaleTechniqueAvailable( RG_RENDER_UPSCALE_TECHNIQUE_INTEL_XESS,
+                                              RG_FRAME_GENERATION_MODE_OFF,
+                                              &cvar::rt_failreason_xess );
+
+    int intelXess = cvar::rt_available_xess
+                        ? int( cvar::rt_upscale_xess )
+                        : 0;
+
     switch( nvDlss )
     {
         case 1:
@@ -2810,8 +2827,41 @@ void RT_UpscaleCvarsToRtgl( RgStartFrameRenderResolutionParams* pDst )
         default: amdFsr = 0; break;
     }
 
-    // both disabled
-    if( nvDlss == 0 && amdFsr == 0 )
+    switch( intelXess )
+    {
+        case 1:
+            pDst->upscaleTechnique = RG_RENDER_UPSCALE_TECHNIQUE_INTEL_XESS;
+            pDst->resolutionMode   = RG_RENDER_RESOLUTION_MODE_QUALITY;
+            break;
+        case 2:
+            pDst->upscaleTechnique = RG_RENDER_UPSCALE_TECHNIQUE_INTEL_XESS;
+            pDst->resolutionMode   = RG_RENDER_RESOLUTION_MODE_BALANCED;
+            break;
+        case 3:
+            pDst->upscaleTechnique = RG_RENDER_UPSCALE_TECHNIQUE_INTEL_XESS;
+            pDst->resolutionMode   = RG_RENDER_RESOLUTION_MODE_PERFORMANCE;
+            break;
+        case 4:
+            pDst->upscaleTechnique = RG_RENDER_UPSCALE_TECHNIQUE_INTEL_XESS;
+            pDst->resolutionMode   = RG_RENDER_RESOLUTION_MODE_ULTRA_PERFORMANCE;
+            break;
+
+        case 5:
+            // use XeSS with rt_renderscale
+            pDst->upscaleTechnique = RG_RENDER_UPSCALE_TECHNIQUE_INTEL_XESS;
+            pDst->resolutionMode   = RG_RENDER_RESOLUTION_MODE_CUSTOM;
+            break;
+
+        case 6:
+            pDst->upscaleTechnique = RG_RENDER_UPSCALE_TECHNIQUE_INTEL_XESS;
+            pDst->resolutionMode   = RG_RENDER_RESOLUTION_MODE_NATIVE_AA;
+            break;
+
+        default: intelXess = 0; break;
+    }
+
+        // all disabled
+    if( nvDlss == 0 && amdFsr == 0 && intelXess == 0 )
     {
         pDst->upscaleTechnique = RG_RENDER_UPSCALE_TECHNIQUE_NEAREST;
         pDst->resolutionMode   = RG_RENDER_RESOLUTION_MODE_CUSTOM;
@@ -2835,7 +2885,7 @@ void RT_UpscaleCvarsToRtgl( RgStartFrameRenderResolutionParams* pDst )
         }
     }
 
-    pDst->sharpenTechnique = RT_GetSharpenTechniqueFromCvar( amdFsr || nvDlss );
+    pDst->sharpenTechnique = RT_GetSharpenTechniqueFromCvar( amdFsr || nvDlss || intelXess );
 }
 
 template< typename T >

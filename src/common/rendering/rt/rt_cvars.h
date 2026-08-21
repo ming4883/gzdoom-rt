@@ -12,6 +12,7 @@ EXTERN_CVAR( Bool, rt_classic_mus )
 
 EXTERN_CVAR( Int, rt_upscale_dlss )
 EXTERN_CVAR( Int, rt_upscale_fsr2 )
+EXTERN_CVAR( Int, rt_upscale_xess )
 EXTERN_CVAR( Int, rt_framegen )
 
 EXTERN_CVAR( Bool, rt_vsync )
@@ -26,12 +27,14 @@ extern bool rt_available_dlss2;
 extern bool rt_available_dlss3fg;
 extern bool rt_available_fsr2;
 extern bool rt_available_fsr3fg;
+extern bool rt_available_xess;
 extern bool rt_available_dxgi;
 
 extern const char* rt_failreason_dlss2;
 extern const char* rt_failreason_dlss3fg;
 extern const char* rt_failreason_fsr2;
 extern const char* rt_failreason_fsr3fg;
+extern const char* rt_failreason_xess;
 extern const char* rt_failreason_dxgi;
 
 extern bool rt_hdr_available;
