@@ -1268,6 +1268,13 @@ set( GAME_SOURCES
 set( GAME_NONPCH_SOURCES ${GAME_SOURCES} )
 list( REMOVE_ITEM GAME_NONPCH_SOURCES ${PCH_SOURCES} )
 
+if( ZMUSIC_VENDORED )
+	# The vendored ZMusic target propagates its own loader/i_module.cpp as an INTERFACE source;
+	# compiling GZDoom's copy as well causes duplicate symbol errors at link time.
+	list( REMOVE_ITEM PCH_SOURCES common/utility/i_module.cpp )
+	list( REMOVE_ITEM GAME_SOURCES common/utility/i_module.cpp )
+endif()
+
 add_executable( zdoom WIN32 MACOSX_BUNDLE ${GAME_SOURCES} )
 
 if( HAVE_RT )
@@ -1278,6 +1285,9 @@ if( HAVE_RT )
 			target_link_options( zdoom PRIVATE $<$<CONFIG:Debug>:/INCREMENTAL> )
 			target_compile_options( zdoom PRIVATE $<$<CONFIG:Debug>:/ZI> )
 		endif()
+
+		# Build RTGL1 before zdoom so the DLL is always fresh.
+		add_dependencies( zdoom RayTracedGL1 )
 	else()
 		message(FATAL_ERROR "Environment variable RTGL1_SDK_PATH is not set. It should point to RTGL1 library directory")
 	endif()
@@ -1438,6 +1448,24 @@ add_custom_command(TARGET zdoom POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
 	${CMAKE_SOURCE_DIR}/fm_banks/gs-by-papiezak-and-sneakernets.wopn $<TARGET_FILE_DIR:zdoom>/fm_banks/gs-by-papiezak-and-sneakernets.wopn
 )
+
+if( HAVE_RT )
+	# rgLoadLibraryAndCreate expects RTGL1.dll under <runtime>/bin/ (or bin/debug).
+	# Copy the freshly built RTGL1 binaries and their runtime dependencies.
+	add_custom_command(TARGET zdoom POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:zdoom>/rt/bin
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			$<TARGET_FILE_DIR:RayTracedGL1>/RTGL1.dll $<TARGET_FILE_DIR:zdoom>/rt/bin/RTGL1.dll
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			$<TARGET_FILE_DIR:RayTracedGL1>/libxess.dll $<TARGET_FILE_DIR:zdoom>/rt/bin/libxess.dll
+	)
+	if( MSVC )
+		add_custom_command(TARGET zdoom POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+				$<TARGET_FILE_DIR:RayTracedGL1>/RTGL1.pdb $<TARGET_FILE_DIR:zdoom>/rt/bin/RTGL1.pdb
+		)
+	endif()
+endif()
 
 if (VCPKG_TOOLCHAIN)
 	x_vcpkg_install_local_dependencies(TARGETS zdoom DESTINATION ".")
