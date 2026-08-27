@@ -446,6 +446,17 @@ option( DYN_OPENAL "Dynamically load OpenAL" ON )
 
 set(ENV{RTGL1_SDK_PATH} "${PROJECT_SOURCE_DIR}/libraries/RTGL")
 
+if( HAVE_RT )
+	# RTGL1 defaults to RG_WITH_SURFACE_WIN32=OFF, which leaves RG_USE_SURFACE_WIN32
+	# undefined and breaks the inline rgLoadLibraryAndCreate helpers in RTGL1.h on Windows.
+	# Force it ON so <windows.h> and the required macros are available to GZDoom consumers.
+	set(RG_WITH_SURFACE_WIN32 ON CACHE BOOL "Build RTGL1 with Win32 VkSurfaceKHR support" FORCE)
+
+	# Build RTGL1 as a subproject; GZDoom loads it at runtime, but this keeps
+	# the DLL fresh and lets CMake copy it alongside the executable.
+	add_subdirectory( libraries/RTGL )
+endif()
+
 add_subdirectory( libraries/lzma )
 add_subdirectory( libraries/miniz )
 add_subdirectory( tools )

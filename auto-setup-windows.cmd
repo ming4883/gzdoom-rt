@@ -32,7 +32,7 @@ goto aftercopyright
 **    notice, this list of conditions and the following disclaimer in the
 **    documentation and/or other materials provided with the distribution.
 ** 3. The name of the author may not be used to endorse or promote products
-**    derived from this software without specific prior written permission.
+**    derived from this software without prior written permission.
 **
 ** THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
 ** IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
@@ -46,14 +46,34 @@ goto aftercopyright
 ** THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **---------------------------------------------------------------------------
 **
-
 :aftercopyright
 
 
 setlocal
+
 rem -- Always operate within the build folder
 if not exist "%~dp0\build" mkdir "%~dp0\build"
 pushd "%~dp0\build"
+
+rem -- Download rt.zip (RT runtime assets) from GitHub releases if not already present
+if not exist "%~dp0\build\rt.zip" (
+	echo Downloading rt.zip from GitHub releases...
+	powershell -NoProfile -Command "Invoke-WebRequest -Uri 'https://github.com/ming4883/gzdoom-rt/releases/download/asset/rt.zip' -OutFile '%~dp0build\rt.zip'"
+	if errorlevel 1 (
+		echo ERROR: Failed to download rt.zip
+		exit /b 1
+	)
+)
+
+rem -- Extract rt.zip into build\rt if not already present
+if not exist "%~dp0\build\rt" (
+	echo Extracting rt.zip into build\rt...
+	powershell -NoProfile -Command "Expand-Archive -Path '%~dp0build\rt.zip' -DestinationPath '%~dp0build' -Force"
+	if errorlevel 1 (
+		echo ERROR: Failed to extract rt.zip
+		exit /b 1
+	)
+)
 
 if exist vcpkg if exist vcpkg\* git -C ./vcpkg pull
 if not exist vcpkg git clone https://github.com/microsoft/vcpkg
@@ -63,4 +83,3 @@ mkdir "%~dp0\build\vcpkg_installed"
 cmake -A x64 -S .. -B . ^
 	-DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake ^
 	-DVCPKG_INSTALLLED_DIR=./vcpkg_installed/
-

@@ -270,7 +270,7 @@ if( DEM_CMAKE_COMPILER_IS_GNUCXX_COMPATIBLE )
 		set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC" )
 		set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC" )
 	endif()
-	
+
 	if(${CMAKE_SYSTEM_NAME} MATCHES "NetBSD")
 		set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -ljemalloc")
 	endif()
@@ -443,7 +443,7 @@ if (MSVC AND ${TARGET_ARCHITECTURE} MATCHES "arm")
 	set (PLAT_WIN32_SOURCES ${PLAT_WIN32_SOURCES} common/platform/win32/i_crash_arm.cpp )
 	add_definitions( -DNO_SSE -D__ARM__ -DRAPIDJSON_ENDIAN=RAPIDJSON_LITTLEENDIAN)
 endif()
-	
+
 set( PLAT_POSIX_SOURCES
 	posix/i_steam.cpp
 	common/platform/posix/i_system_posix.cpp )
@@ -752,7 +752,7 @@ set( FASTMATH_SOURCES
 	rendering/hwrenderer/scene/hw_weapon.cpp
 	common/utility/matrix.cpp
 )
-	
+
 #Vulkan stuff must go into a separate list because it needs to be disabled for some platforms
 set (VULKAN_SOURCES
 	common/rendering/vulkan/system/vk_renderdevice.cpp
@@ -1032,7 +1032,7 @@ set (PCH_SOURCES
 	common/fonts/font.cpp
 	common/fonts/hexfont.cpp
 	common/fonts/v_font.cpp
-	common/fonts/v_text.cpp	
+	common/fonts/v_text.cpp
 	common/textures/hw_ihwtexture.cpp
 	common/textures/hw_material.cpp
 	common/textures/bitmap.cpp
@@ -1142,7 +1142,7 @@ set (PCH_SOURCES
 	common/menu/menudef.cpp
 	common/menu/savegamemanager.cpp
 	common/statusbar/base_sbar.cpp
-	
+
 	common/rendering/v_framebuffer.cpp
 	common/rendering/v_video.cpp
 	common/rendering/r_thread.cpp
@@ -1195,7 +1195,7 @@ set (PCH_SOURCES
 	common/scripting/frontend/zcc_parser.cpp
 	common/scripting/backend/vmbuilder.cpp
 	common/scripting/backend/codegen.cpp
-	
+
 	utility/nodebuilder/nodebuild.cpp
 	utility/nodebuilder/nodebuild_classify_nosse2.cpp
 	utility/nodebuilder/nodebuild_events.cpp
@@ -1268,6 +1268,13 @@ set( GAME_SOURCES
 set( GAME_NONPCH_SOURCES ${GAME_SOURCES} )
 list( REMOVE_ITEM GAME_NONPCH_SOURCES ${PCH_SOURCES} )
 
+if( ZMUSIC_VENDORED )
+	# The vendored ZMusic target propagates its own loader/i_module.cpp as an INTERFACE source;
+	# compiling GZDoom's copy as well causes duplicate symbol errors at link time.
+	list( REMOVE_ITEM PCH_SOURCES common/utility/i_module.cpp )
+	list( REMOVE_ITEM GAME_SOURCES common/utility/i_module.cpp )
+endif()
+
 add_executable( zdoom WIN32 MACOSX_BUNDLE ${GAME_SOURCES} )
 
 if( HAVE_RT )
@@ -1278,6 +1285,9 @@ if( HAVE_RT )
 			target_link_options( zdoom PRIVATE $<$<CONFIG:Debug>:/INCREMENTAL> )
 			target_compile_options( zdoom PRIVATE $<$<CONFIG:Debug>:/ZI> )
 		endif()
+
+		# Build RTGL1 before zdoom so the DLL is always fresh.
+		add_dependencies( zdoom RayTracedGL1 )
 	else()
 		message(FATAL_ERROR "Environment variable RTGL1_SDK_PATH is not set. It should point to RTGL1 library directory")
 	endif()
@@ -1438,6 +1448,26 @@ add_custom_command(TARGET zdoom POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
 	${CMAKE_SOURCE_DIR}/fm_banks/gs-by-papiezak-and-sneakernets.wopn $<TARGET_FILE_DIR:zdoom>/fm_banks/gs-by-papiezak-and-sneakernets.wopn
 )
+
+if( HAVE_RT )
+	# RT runtime assets (rt.zip) are downloaded and extracted by auto-setup-windows.cmd
+	# into ${CMAKE_BINARY_DIR}/rt/ (i.e. build/rt/).
+	# Create a zero-cost link from the build output directory to build/rt so that
+	# rgLoadLibraryAndCreate can find RTGL1.dll and its assets.
+	if( WIN32 )
+		add_custom_command(TARGET zdoom POST_BUILD
+			COMMAND "${CMAKE_SOURCE_DIR}/cmake/create_rt_junction.bat"
+				$<TARGET_FILE_DIR:zdoom>/rt "${CMAKE_BINARY_DIR}/rt"
+			COMMENT "Creating rt directory junction to build/rt..."
+		)
+	else()
+		add_custom_command(TARGET zdoom POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E create_symlink
+				"${CMAKE_BINARY_DIR}/rt" "$<TARGET_FILE_DIR:zdoom>/rt"
+			COMMENT "Creating rt symlink to build/rt..."
+		)
+	endif()
+endif()
 
 if (VCPKG_TOOLCHAIN)
 	x_vcpkg_install_local_dependencies(TARGETS zdoom DESTINATION ".")
