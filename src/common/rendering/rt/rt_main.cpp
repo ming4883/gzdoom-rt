@@ -158,6 +158,10 @@ namespace cvar
     RT_CVAR( rt_remix_taa,              0,      "[only for RTX Remix] temporal anti aliasing. 0 - off, 1 - quality, 2 - balanced, 3 - perf, 4 - ultra perf, 5 - FSR2 with rt_renderscale, 6 - native" )
 
     RT_CVAR( rt_shadowrays,             4,      "max depth of shadow ray casts" )
+    RT_CVAR( rt_nrc_train_prob,         0.25f,  "[NRC] portion [0.0,1.0] of pixels that trace the real second diffuse bounce and train the neural radiance cache; the rest use the cached network output" )
+    RT_CVAR( rt_nrc_batch_size,         16384,  "[NRC] max training samples per frame, [0,65536], multiples of 128 recommended; higher = faster convergence, more compute" )
+    RT_CVAR( rt_nrc_learning_rate,      0.002f, "[NRC] Adam learning rate for the online training" )
+    RT_CVAR( rt_nrc_ema_alpha,          0.99f,  "[NRC] EMA smoothing (0,1) for the inference weights" )
     RT_CVAR( rt_withplayer,             true,   "enable player model for shadows, reflections etc" )
     RT_CVAR( rt_lerpmdlangle,           true,   "interpolate subtick rotation for replacements" )
     RT_CVAR( rt_spectre,                0,      "render spectres as: 0 - water, 1 - glass, 2 - mirror" )
@@ -3544,6 +3548,16 @@ void RTFrameBuffer::RT_DrawFrame()
         .lightUniqueIdIgnoreFirstPersonViewerShadows = &FlashlightLightId,
     };
 
+    // runtime NRC tuning knobs (ignored when the cache is inactive)
+    auto nrc_params = RgDrawFrameNRCParams{
+        .sType            = RG_STRUCTURE_TYPE_DRAW_FRAME_NRC_PARAMS,
+        .pNext            = &illum_params,
+        .trainProbability = cvar::rt_nrc_train_prob,
+        .trainBatchSize   = safe_uint( *cvar::rt_nrc_batch_size ),
+        .learningRate     = cvar::rt_nrc_learning_rate,
+        .emaAlpha         = cvar::rt_nrc_ema_alpha,
+    };
+
     auto ef_wipe = RgPostEffectWipe{
         .stripWidth = 1.0f / 320.0f,
         .beginNow   = cvar::rt_melt_duration > 0.05f ? g_melt_requested : false,
@@ -3689,7 +3703,7 @@ void RTFrameBuffer::RT_DrawFrame()
     // some of the power-up effects need to be reset
     auto post_params = RgDrawFramePostEffectsParams{
         .sType                 = RG_STRUCTURE_TYPE_DRAW_FRAME_POST_EFFECTS_PARAMS,
-        .pNext                 = &illum_params,
+        .pNext                 = &nrc_params,
         .pWipe                 = &ef_wipe,
         .pRadialBlur           = g_resetposteffects ? nullptr : &ef_radialblur,
         .pChromaticAberration  = &ef_chrabr,
