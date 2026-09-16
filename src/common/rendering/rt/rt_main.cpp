@@ -170,6 +170,19 @@ namespace cvar
     RT_CVAR( rt_emis_mapboost,          200.f,  "indirect illumination emissiveness" )
     RT_CVAR( rt_emis_maxscrcolor,       8.f,    "burn on-screen emissive colors" )
     RT_CVAR( rt_emis_additive_dflt,     0.5f,   "emission value for objects with additive blending" )
+
+    // Firefly suppression at the shading point (ported from Quake 2 RTX).
+    // 0 disables clamping for that channel. 1000 is Q2RTX's MAX_OUTPUT_VALUE;
+    // RTGL runs emissionMapBoost=200 with different light units, so sweep this.
+    RT_CVAR( rt_clamp_direct,          500.f, "upper bound for direct radiance; 0 disables" )
+    RT_CVAR( rt_clamp_indirect,        500.f, "upper bound for indirect radiance; 0 disables" )
+    RT_CVAR( rt_clamp_specular,        500.f, "upper bound for specular radiance; 0 disables" )
+
+    // Phase 2: bounce>=1 solid angle limit (Q2RTX). 0.02 sr default, 0 disables.
+    RT_CVAR( rt_indirect_maxsolidangle, 0.02f,  "max light solid angle for indirect bounces; 0 disables" )
+    // Phase 3: variance-based NCC + one-way anti-sparkle in temporal accumulation.
+    RT_CVAR( rt_taa_variance,           1.f,    "variance-based history clamp strength; 0 disables" )
+    RT_CVAR( rt_taa_antisparkle,        0.25f,  "one-way anti-sparkle clamp strength; 0 disables" )
     RT_CVAR( rt_smoothtextures,         false,  "enable linear texture filtering" )
 
     RT_CVAR( rt_tnmp_ev100_min,         1.f,    "min brightness for auto-exposure" )
@@ -3515,6 +3528,12 @@ void RTFrameBuffer::RT_DrawFrame()
         .emissionMaxScreenColor = cvar::rt_emis_maxscrcolor,
         .minRoughness           = cvar::rt_refl_thresh,
         .heightMapDepth         = 0.02f * cvar::rt_heightmap_stren,
+        .clampDirect            = cvar::rt_clamp_direct,
+        .clampIndirect          = cvar::rt_clamp_indirect,
+        .clampSpecular          = cvar::rt_clamp_specular,
+        .indirectMaxSolidAngle = cvar::rt_indirect_maxsolidangle,
+        .taaVarianceGamma      = cvar::rt_taa_variance,
+        .taaAntiSparkle        = cvar::rt_taa_antisparkle,
     };
 
     float dirtscale = ( ( powerupflags & RT_POWERUP_FLAG_RADIATIONSUIT_BIT ) ||
