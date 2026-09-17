@@ -198,8 +198,11 @@ namespace cvar
     RT_CVAR( rt_hdr_saturation,         0.15f,  "(only if rt_hdr is ON) HDR saturation: -1 desaturate, +1 over saturate" )
     RT_CVAR( rt_hdr_brightness,         1.0f,   "(only if rt_hdr is ON) HDR brightess multiplier" )
 
-    RT_CVAR( rt_sky,                    100.f,  "sky intensity")
+    RT_CVAR( rt_sky,                    100.f,  "sky intensity (visible sky only)")
     RT_CVAR( rt_sky_saturation,         1.f,    "sky saturation")
+    RT_CVAR( rt_skylight,               100.f,  "sky lighting intensity: indirect bounces / ambient fill, decoupled from visible sky")
+    RT_CVAR( rt_sky_scale,              1.0f,   "live multiplier on visible sky intensity, applied AFTER per-map scenes.json override")
+    RT_CVAR( rt_skylight_scale,         3.0f,   "live multiplier on sky lighting intensity, applied AFTER per-map scenes.json override")
     RT_CVAR( rt_sky_stretch,            1.2f,   "how much to stretch the sky sphere along the vertical axis")
     RT_CVAR( rt_sky_always,             true,   "always submit sky geometry (even if it's not visible in primary view)")
 
@@ -3495,6 +3498,10 @@ void RTFrameBuffer::RT_DrawFrame()
         .skyColorDefault    = { 0, 0, 0 },
         .skyColorMultiplier = cvar::rt_sky,
         .skyColorSaturation = cvar::rt_sky_saturation,
+        .skyLightMultiplier = cvar::rt_skylight,
+        .skyLightSaturation = cvar::rt_sky_saturation,
+        .skyColorScale      = cvar::rt_sky_scale,
+        .skyLightScale      = cvar::rt_skylight_scale,
         .skyViewerPosition  = { 0, 0, 0 },
     };
 
